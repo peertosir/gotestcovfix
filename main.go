@@ -61,7 +61,7 @@ func main() {
 		out, err := exec.Command(innerCommand[0], innerCommand[1:]...).CombinedOutput()
 		if err != nil {
 			cleanCreatedTests(createdDummyTests)
-			log.Fatalf("Error occured: %s, %s\n", string(out), err.Error())
+			log.Fatalf("Error occured: %s, %s\n", formatOutput(out), err.Error())
 		}
 		_, err = os.Stdin.Write(out)
 		if err != nil {
@@ -81,13 +81,16 @@ func getFormattedPackages(packages string) []string {
 	return strings.Split(regexp.MustCompile(`\s`).ReplaceAllString(input, " "), " ")
 }
 
+func formatOutput(inp []byte) string {
+	return strings.TrimSpace(string(inp))
+}
+
 func getAllPackages(pkgs string) []Package {
 	command := []string{"list", "-json"}
 	command = append(command, getFormattedPackages(pkgs)...)
 	out, err := exec.Command("go", command...).CombinedOutput()
 	if err != nil {
-		formattedOut := strings.TrimSpace(string(out))
-		log.Fatalf("Error during packages acquiring: %s, %s", formattedOut, err.Error())
+		log.Fatalf("Error during packages acquiring: %s, %s", formatOutput(out), err.Error())
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(out))
