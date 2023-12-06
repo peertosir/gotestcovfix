@@ -38,7 +38,7 @@ func main() {
 		userPackages = testPackages
 	}
 
-	packages = getAllPackages(userPackages)
+	packages = getPackagesInfo(userPackages)
 
 	createdDummyTests := make([]string, 0)
 	for _, p := range packages {
@@ -85,7 +85,7 @@ func formatOutput(inp []byte) string {
 	return strings.TrimSpace(string(inp))
 }
 
-func getAllPackages(pkgs string) []Package {
+func getPackagesInfo(pkgs string) []Package {
 	command := []string{"list", "-json"}
 	command = append(command, getFormattedPackages(pkgs)...)
 	out, err := exec.Command("go", command...).CombinedOutput()
