@@ -86,7 +86,8 @@ func getAllPackages(pkgs string) []Package {
 	command = append(command, getFormattedPackages(pkgs)...)
 	out, err := exec.Command("go", command...).CombinedOutput()
 	if err != nil {
-		log.Fatalf("Error during packages acquiring: %s, %s", string(out), err.Error())
+		formattedOut := strings.TrimSpace(string(out))
+		log.Fatalf("Error during packages acquiring: %s, %s", formattedOut, err.Error())
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(out))
