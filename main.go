@@ -17,30 +17,28 @@ import (
 type Package struct {
 	Dir         string   // directory containing package sources
 	Name        string   // package name
-	TestGoFiles []string // package name
+	TestGoFiles []string // tedt files in package name
 }
 
 func main() {
 	var packages []Package
-	var inputPackages string
+	var userPackages string
 	var usePackageTestName bool
 	var cleanup bool
 
-	flag.StringVar(&inputPackages, "tpkgs", "./...", "packages to run tests")
+	flag.StringVar(&userPackages, "tpkgs", "./...", "packages to run tests")
 	flag.BoolVar(&cleanup, "cleanup", false, "clean up dummy tests after usage")
-	flag.BoolVar(&usePackageTestName, "pkgtestname", false, "use 'pkg_test.go' instead of 'dummy_test.go' for dummy test files")
+	flag.BoolVar(&usePackageTestName, "pkgnames", false, "use '{package}_test.go' instead of 'dummy_test.go' for dummy test files")
 	flag.Parse()
 
 	innerCommand := flag.Args()
 
 	testPackages, isSet := os.LookupEnv("GO_TEST_PACKAGES")
 	if isSet {
-		inputPackages = testPackages
+		userPackages = testPackages
 	}
 
-	packages = getAllPackages(inputPackages)
-
-	log.Printf("packages=%s\n", packages)
+	packages = getAllPackages(userPackages)
 
 	createdDummyTests := make([]string, 0)
 	for _, p := range packages {
@@ -58,23 +56,22 @@ func main() {
 			}
 		}
 	}
-	log.Printf("Created dummy tests: %v\n", createdDummyTests)
 
 	if len(innerCommand) > 0 {
 		out, err := exec.Command(innerCommand[0], innerCommand[1:]...).CombinedOutput()
 		if err != nil {
-			cleanCreatedData(createdDummyTests)
+			cleanCreatedTests(createdDummyTests)
 			log.Fatalf("Error occured: %s, %s\n", string(out), err.Error())
 		}
 		_, err = os.Stdin.Write(out)
 		if err != nil {
-			cleanCreatedData(createdDummyTests)
+			cleanCreatedTests(createdDummyTests)
 			log.Fatalf("Error during writing to stdin: %s\n", err.Error())
 		}
 	}
 
 	if cleanup {
-		cleanCreatedData(createdDummyTests)
+		cleanCreatedTests(createdDummyTests)
 	}
 	fmt.Println("All done!")
 }
@@ -106,7 +103,7 @@ func getAllPackages(pkgs string) []Package {
 	return packages
 }
 
-func cleanCreatedData(createdFiles []string) {
+func cleanCreatedTests(createdFiles []string) {
 	for _, dt := range createdFiles {
 		err := os.Remove(dt)
 		if err != nil {
