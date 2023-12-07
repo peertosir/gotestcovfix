@@ -59,15 +59,10 @@ func main() {
 	}
 
 	if len(innerCommand) > 0 {
-		out, err := exec.Command(innerCommand[0], innerCommand[1:]...).CombinedOutput()
-		if err != nil {
+		_, exitCode := executeCommand(innerCommand[0], innerCommand[1:], true)
+		if exitCode != 0 {
 			cleanCreatedTests(createdDummyTests)
-			log.Fatalf("Error occured: %s, %s\n", formatOutput(out), err.Error())
-		}
-		_, err = os.Stdout.Write(out)
-		if err != nil {
-			cleanCreatedTests(createdDummyTests)
-			log.Fatalf("Error during writing to stdin: %s\n", err.Error())
+			os.Exit(exitCode)
 		}
 	}
 
@@ -87,11 +82,11 @@ func formatOutput(inp []byte) string {
 }
 
 func getPackagesInfo(pkgs string) []Package {
-	command := []string{"list", "-json"}
-	command = append(command, getFormattedPackages(pkgs)...)
-	out, err := exec.Command("go", command...).CombinedOutput()
-	if err != nil {
-		log.Fatalf("Error during packages acquiring: %s, %s", formatOutput(out), err.Error())
+	args := []string{"list", "-json"}
+	args = append(args, getFormattedPackages(pkgs)...)
+	out, exitCode := executeCommand("go", args, false)
+	if exitCode != 0 {
+		os.Exit(1)
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(out))
@@ -106,6 +101,24 @@ func getPackagesInfo(pkgs string) []Package {
 		packages = append(packages, p)
 	}
 	return packages
+}
+
+func executeCommand(prog string, prArgs []string, outputOnSuccess bool) ([]byte, int) {
+	out, err := exec.Command(prog, prArgs...).CombinedOutput()
+	if outputOnSuccess {
+		log.Println(formatOutput(out))
+	}
+
+	if err != nil {
+		log.Printf("Error during executing: %s", prog)
+		log.Println(formatOutput(out))
+		if exitError, ok := err.(*exec.ExitError); ok {
+			return nil, exitError.ExitCode()
+		}
+		return nil, 1
+	}
+
+	return out, 0
 }
 
 func cleanCreatedTests(createdFiles []string) {
