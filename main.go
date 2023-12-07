@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -48,7 +49,7 @@ func main() {
 				testName = fmt.Sprintf("%s_test.go", p.Name)
 			}
 			dummyTestPath := filepath.Join(p.Dir, testName)
-			err := os.WriteFile(dummyTestPath, []byte(fmt.Sprintf("package %s", p.Name)), 0644)
+			err := ioutil.WriteFile(dummyTestPath, []byte(fmt.Sprintf("package %s", p.Name)), 0644)
 			if err != nil {
 				log.Printf("Cannot create dummy test file on path: %s. Cause: %s\n", dummyTestPath, err.Error())
 			} else {
