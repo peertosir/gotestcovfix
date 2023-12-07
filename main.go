@@ -18,7 +18,7 @@ import (
 type Package struct {
 	Dir         string   // directory containing package sources
 	Name        string   // package name
-	TestGoFiles []string // tedt files in package name
+	TestGoFiles []string // test files in package name
 }
 
 func main() {
@@ -61,7 +61,6 @@ func main() {
 	if len(innerCommand) > 0 {
 		_, exitCode := executeCommand(innerCommand[0], innerCommand[1:], true)
 		if exitCode != 0 {
-			cleanCreatedTests(createdDummyTests)
 			os.Exit(exitCode)
 		}
 	}
@@ -69,7 +68,7 @@ func main() {
 	if cleanup {
 		cleanCreatedTests(createdDummyTests)
 	}
-	fmt.Println("All done!")
+	writeToConsole("===All done!===")
 }
 
 func getFormattedPackages(packages string) []string {
@@ -103,15 +102,22 @@ func getPackagesInfo(pkgs string) []Package {
 	return packages
 }
 
+func writeToConsole(data string) {
+	_, err := os.Stdout.Write([]byte(data + "\n"))
+	if err != nil {
+		panic("error writing in stdout")
+	}
+}
+
 func executeCommand(prog string, prArgs []string, outputOnSuccess bool) ([]byte, int) {
 	out, err := exec.Command(prog, prArgs...).CombinedOutput()
 	if outputOnSuccess {
-		log.Println(formatOutput(out))
+		writeToConsole(formatOutput(out))
 	}
 
 	if err != nil {
-		log.Printf("Error during executing: %s", prog)
-		log.Println(formatOutput(out))
+		writeToConsole(fmt.Sprintf("Error during executing: %s", prog))
+		os.Stderr.Write(out)
 		if exitError, ok := err.(*exec.ExitError); ok {
 			return nil, exitError.ExitCode()
 		}
@@ -125,7 +131,7 @@ func cleanCreatedTests(createdFiles []string) {
 	for _, dt := range createdFiles {
 		err := os.Remove(dt)
 		if err != nil {
-			log.Printf("Cleanup failed for %s", dt)
+			writeToConsole(fmt.Sprintf("Cleanup failed for %s", dt))
 		}
 	}
 }
