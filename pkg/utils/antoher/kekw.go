@@ -1,5 +1,0 @@
-package antoher
-
-func Opa() {
-
-}
